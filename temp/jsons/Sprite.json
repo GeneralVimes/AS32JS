@@ -1,0 +1,28 @@
+{
+    "class_name": "Sprite",
+    "fields": [
+        "touchable",
+        "touchGroup",
+        "x",
+        "y",
+        "rotation",
+        "scale",
+        "scaleX",
+        "scaleY",
+        "alpha",
+        "visible",
+        "parent",
+        "numChildren"
+    ],
+    "methods": [
+        "removeFromParent",
+        "removeChild",
+        "addChild",
+        "removeChild",
+        "getChildIndex",
+        "addChildAt",
+        "getChildAt",
+        "getBounds"
+    ],
+    "parent": ""
+}

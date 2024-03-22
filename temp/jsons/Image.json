@@ -1,0 +1,31 @@
+{
+    "class_name": "Image",
+    "fields": [
+        "touchable",
+        "touchGroup",
+        "x",
+        "y",
+        "width",
+        "height",
+        "pivotX",
+        "pivotY",
+        "skewX",
+        "skewY",
+        "rotation",
+        "scale",
+        "scaleX",
+        "scaleY",
+        "alpha",
+        "visible",
+        "parent",
+        "texture"
+    ],
+    "methods": [
+        "removeFromParent",
+        "getBounds",
+        "localToGlobal",
+        "globalToLocal",
+        "readjustSize"
+    ],
+    "parent": ""
+}

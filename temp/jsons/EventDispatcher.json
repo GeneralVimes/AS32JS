@@ -1,0 +1,12 @@
+{
+    "class_name": "EventDispatcher",
+    "fields": [
+    ],
+    "methods": [
+        "addEventListener",
+        "hasEventListener",
+        "removeEventListener",
+        "dispatchEvent"
+    ],
+    "parent": ""
+}

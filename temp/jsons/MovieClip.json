@@ -1,0 +1,34 @@
+{
+    "class_name": "MovieClip",
+    "fields": [
+        "currentFrame",
+        "totalFrames",
+        "touchable",
+        "touchGroup",
+        "x",
+        "y",
+        "width",
+        "height",
+        "pivotX",
+        "pivotY",
+        "skewX",
+        "skewY",		
+        "rotation",
+        "scale",
+        "scaleX",
+        "scaleY",
+        "alpha",
+        "visible",
+        "parent",
+        "numChildren"
+    ],
+    "methods": [
+		"removeFromParent",
+		"getBounds",
+        "addChild",
+		"localToGlobal",
+        "globalToLocal",
+        "readjustSize"
+    ],
+    "parent": "Sprite"
+}
