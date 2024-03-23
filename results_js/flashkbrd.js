@@ -1,4 +1,4 @@
-var Keyboard = {
+var FlashKbrd = {
 	ESCAPE:"Escape",
 	BACK:"Backspace",
 	DELETE:"Delete",

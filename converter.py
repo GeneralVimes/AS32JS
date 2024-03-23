@@ -162,8 +162,8 @@ def perform_flash2js_replacements(ln_ar):
 			ln_ar[id]="Date.now"
 		if ln_ar[id].endswith(".getStackTrace"):
 			ln_ar[id]=ln_ar[id][0:-13]+"toString"
-		if ln_ar[id].startswith("flash.ui.Keyboard"):
-			ln_ar[id]=ln_ar[id][9:]
+		if ln_ar[id].startswith("flash.ui.Keyboard."):
+			ln_ar[id]="FlashKbrd."+ln_ar[id][18:]
 		if ln_ar[id].endswith(".keyCode"):
 			ln_ar[id] = ln_ar[id][0:-7]+"code"
 		if ln_ar[id].endswith(".texture"):
@@ -172,6 +172,20 @@ def perform_flash2js_replacements(ln_ar):
 			ln_ar[id]="Phaser.Geom."+ln_ar[id]
 		if ln_ar[id].find("Point")==0:
 			ln_ar[id]="Phaser.Geom."+ln_ar[id]
+		if ln_ar[id].endswith(".removeAt"):
+			last_closing_paren_id=-1
+			num_opened_parens=0;
+			for id2 in range(id+1, len(ln_ar)):
+				if ln_ar[id2]=="(":
+					num_opened_parens+=1;
+				if ln_ar[id2]==")":
+					num_opened_parens-=1;
+					if num_opened_parens==0:
+						last_closing_paren_id=id2
+						break
+			if num_opened_parens!=-1:
+				ln_ar[id]=ln_ar[id][0:-9]+".splice"
+				ln_ar[last_closing_paren_id]=", 1)"
 		if ln_ar[id]=="is":
 			is_checking_interface = False
 			if id>0 and id<len(ln_ar)-1:
