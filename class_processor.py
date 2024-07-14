@@ -43,7 +43,7 @@ def has_class_name(ln_ar):
 			res=True
 	return res;
 
-def add_vars_and_functions_from_parent(class_parent,list_vars,list_functions):
+def add_vars_and_functions_from_parent(class_parent,list_vars,list_functions,list_parents):
 	data = None
 	try:
 		f = open('temp/jsons/'+class_parent+'.json')
@@ -59,6 +59,11 @@ def add_vars_and_functions_from_parent(class_parent,list_vars,list_functions):
 		for x in data["methods"]:
 			if x not in list_functions:
 				list_functions.append(x)
+		if "parents" in data:
+			for x in data["parents"]:
+				if x not in list_parents:
+					list_parents.append(x)
+				
 
 
 def process_class(clnm, file=None):
@@ -83,6 +88,7 @@ def process_class(clnm, file=None):
 		)
 	# print(split_lns);
 	class_parent=""
+	parents_list=[]
 	list_vars=[]
 	list_functions=[]
 
@@ -95,6 +101,7 @@ def process_class(clnm, file=None):
 			try:
 				id=ln_ar.index("extends")
 				class_parent=ln_ar[id+1]
+				parents_list.append(ln_ar[id+1])
 				break
 			except:
 				pass
@@ -114,9 +121,9 @@ def process_class(clnm, file=None):
 	# 4. looking for ancestor's json and adding its firelds and methods, too
 	# 5. warning if it is not found
 	if class_parent!="":
-		add_vars_and_functions_from_parent(class_parent,list_vars,list_functions)
+		add_vars_and_functions_from_parent(class_parent,list_vars,list_functions, parents_list)
 	# 6. generating json 
-	ob={"class_name":current_classname, "parent":class_parent, "fields":list_vars, "methods":list_functions}
+	ob={"class_name":current_classname, "parent":class_parent, "fields":list_vars, "methods":list_functions, "parents":parents_list}
 	if is_interface:
 		ob["is_interface"]=is_interface
 	with open('temp/jsons/'+current_classname+'.json', "w") as write_file:

@@ -22,7 +22,8 @@
         "getChildIndex",
         "addChildAt",
         "getChildAt",
-        "getBounds"
+        "getBounds",
+		"removeAllInteraction"
     ],
     "parent": ""
 }

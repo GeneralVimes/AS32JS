@@ -1,5 +1,25 @@
 import json
 import os
+map_names=[]
+all_map_names=[]
+global_settings={}
+
+def register_global_settins(stob):
+	global global_settings
+	global_settings=stob
+	print("register_global_settins",global_settings)
+
+def must_dictionary_be_map(field_name,class_name, list_of_parents):
+	res=False
+	maps_data_ar = global_settings["dictionaries_as_maps"]
+	for ob in maps_data_ar:
+		if class_name==ob["class_name"] or ob["class_name"] in list_of_parents:
+			if "field_name" in ob:
+				if field_name==ob["field_name"]:
+					res=True
+			else:
+				res=True
+	return res
 
 def remove_types(str):
 	type_names_sms="qwertyuiopasdfghjklzxcvbnm0123456789QWERTYUIOPASDFGHJKLZXCVBNM.<>*"#var obs:Vector.<Object>
@@ -154,7 +174,7 @@ def is_classname_interface(nm):
 	return res	
 
 # replacing trace with console.log()
-def perform_flash2js_replacements(ln_ar):
+def perform_flash2js_replacements(ln_ar, class_name, list_of_parents):#class_name, list_of_parents are needed for Dictionary conversions
 	for id in range(len(ln_ar)):
 		if ln_ar[id]=="trace":
 			ln_ar[id]="console.log"
@@ -164,6 +184,8 @@ def perform_flash2js_replacements(ln_ar):
 			ln_ar[id]=ln_ar[id][0:-13]+"toString"
 		if ln_ar[id].startswith("flash.ui.Keyboard."):
 			ln_ar[id]="FlashKbrd."+ln_ar[id][18:]
+		if ln_ar[id].startswith("Keyboard."):
+			ln_ar[id]="FlashKbrd."+ln_ar[id][9:]			
 		if ln_ar[id].endswith(".keyCode"):
 			ln_ar[id] = ln_ar[id][0:-7]+"code"
 		if ln_ar[id].endswith(".texture"):
@@ -186,6 +208,16 @@ def perform_flash2js_replacements(ln_ar):
 			if num_opened_parens!=-1:
 				ln_ar[id]=ln_ar[id][0:-9]+".splice"
 				ln_ar[last_closing_paren_id]=", 1)"
+		if ln_ar[id].endswith(".insertAt"):
+			first_comma_id=-1
+			for id2 in range(id+1, len(ln_ar)):
+				if ln_ar[id2].endswith(","):
+					if first_comma_id==-1:
+						first_comma_id=id2
+						break
+			if first_comma_id!=-1:
+				ln_ar[id]=ln_ar[id][0:-9]+".splice"
+				ln_ar[first_comma_id]+="0,"
 		if ln_ar[id]=="is":
 			is_checking_interface = False
 			if id>0 and id<len(ln_ar)-1:
@@ -208,7 +240,22 @@ def perform_flash2js_replacements(ln_ar):
 					if (ln_ar[id+1].find("Vector")==0):
 						smbs_to_replace="[]"
 					else:
+						#we will delare map only if it is in global_settings
 						smbs_to_replace="{}"
+						possible_map_name=""
+						print("map or object declared",id, ln_ar)
+						if id>=2:
+							possible_map_name = ln_ar[id-2]
+							if possible_map_name.endswith("*/"):
+								if id>=4:
+									possible_map_name = ln_ar[id-4]
+							if (possible_map_name.startswith("this.")):
+								possible_map_name = possible_map_name[5:]
+						if possible_map_name!="":
+							if must_dictionary_be_map(possible_map_name,class_name, list_of_parents):
+								smbs_to_replace="new Map()"
+								map_names.append(possible_map_name)
+								all_map_names.append(possible_map_name)
 					closing_paren_id=id+1
 					for id2 in range(id+1,len(ln_ar)):
 						if ln_ar[id2].find(")")!=-1:
@@ -218,6 +265,82 @@ def perform_flash2js_replacements(ln_ar):
 					ln_ar[closing_paren_id]=ln_ar[closing_paren_id]+"*/" #we will keep the vector to see what should be inside
 					# for id2 in range(id+1,closing_paren_id+1):
 					# 	ln_ar[id2]=""
+		# print(id, map_names)
+  		## we will later through all maps and fix their usage
+		is_map_action=False
+		"""
+AS3:										JS			
+var d:Dictionary = new Dictionary()			var d = new Map();											
+d[ob]=1										d.set(ob, 1);															
+if(ob in d)									if(d.has(ob))					
+var k:int = d[ob2]							var k = d.get(ob2);																					
+for (var key:* in d){						for (let key of d.keys()) {								
+	
+		"""
+		# print(map_names)q
+		if ln_ar[id] in map_names:
+			is_map_action=True
+		else:
+			for mpn in map_names:
+				if ln_ar[id].endswith(mpn):
+					# print("endswith", mpn, ln_ar[id], ln_ar[id][-len(mpn)-1])
+					if ln_ar[id][-len(mpn)-1]==".":
+						is_map_action=True
+						break
+		if is_map_action:
+			made_action_type="none"
+			# print("fouund map name", id)
+			# print(ln_ar)
+			num_open_brackets=0;
+			num_closed_brackets=0;
+			first_open_bracket_id=-1
+			for id2 in range(id+1,len(ln_ar)):
+				if ln_ar[id2]=="[":
+					num_open_brackets+=1
+					if first_open_bracket_id==-1:
+						first_open_bracket_id=id2;
+				if ln_ar[id2]=="]":
+					num_closed_brackets+=1
+					if num_closed_brackets==num_open_brackets:
+						if first_open_bracket_id==id+1:
+							will_use_get = True
+							last_set_elem_id=-1
+							if id2<len(ln_ar)-2:
+								if ln_ar[id2+1]=="=":
+									will_use_get=False
+									for last_set_elem_id in range(len(ln_ar)-1, id2, -1):
+										if last_set_elem_id!=";":
+											break;
+							if will_use_get:
+								ln_ar[id]+=".get"
+								ln_ar[first_open_bracket_id]="("
+								ln_ar[id2]=")"
+								made_action_type="get"
+							else:
+								# print("SET!!!")
+								# print(ln_ar)
+								ln_ar[id]+=".set"
+								ln_ar[first_open_bracket_id]="("
+								ln_ar[id2]=""
+								ln_ar[id2+1]=","
+								if ln_ar[last_set_elem_id].endswith(";"):
+									ln_ar[last_set_elem_id]=ln_ar[last_set_elem_id][:-1]+")"+";"
+								else:
+									ln_ar[last_set_elem_id]+=")"
+								made_action_type="set"
+								# print(ln_ar)
+						break;
+			if made_action_type=="none":
+				if id>1:
+					if ln_ar[id-1]=="in":
+						if ln_ar[0]=="for":
+							ln_ar[id-1]="of"
+							ln_ar[id]+=".keys()"
+						else:
+							ln_ar[id]+=".has("+ln_ar[id-2]+")"
+							ln_ar[id-2]=""
+							ln_ar[id-1]=""
+							made_action_type="has"
 					
 
 
@@ -282,7 +405,7 @@ def add_this_to_linesar(ln_ar, list_of_var, list_of_funcs, list_of_static,class_
 				ln_ar[lin_id] = class_name+"."+ln_ar[lin_id]
 	return " ".join(ln_ar);
 
-def add_vars_and_functions_from_parent(class_parent,list_vars,list_functions):
+def add_vars_and_functions_from_parent(class_parent,list_vars,list_functions,list_parents):
 	data = None
 	try:
 		f = open('temp/jsons/'+class_parent+'.json')
@@ -298,11 +421,16 @@ def add_vars_and_functions_from_parent(class_parent,list_vars,list_functions):
 		for x in data["methods"]:
 			if x not in list_functions:
 				list_functions.append(x)
+		if "parents" in data:
+			for x in data["parents"]:
+				if x not in list_parents:
+					list_parents.append(x)			
 
 def add_this_to_lines(lns):
 	list_of_var=[];
 	list_of_static=[];
 	list_of_funcs=[];
+	list_of_parents=[];
 	pre_spaces=[];
 	split_lns=[]
 	lines_with_functions_declarations=[];
@@ -415,15 +543,16 @@ def add_this_to_lines(lns):
 	# print("list_of_funcs:",list_of_funcs)
 	# print(split_lns)
 	if parent_class!="":
-		add_vars_and_functions_from_parent(parent_class,list_of_var,list_of_funcs)
+		add_vars_and_functions_from_parent(parent_class,list_of_var,list_of_funcs,list_of_parents)
 
 	res_lns=[];
+	map_names.clear()
 	# print("line_id_with_classname",split_lns[line_id_with_classname])
 	for lin_id in range(len(split_lns)):
 		if lin_id not in lines_with_imports and lin_id>=line_id_with_classname:
 			ln_ar = split_lns[lin_id];
 
-			perform_flash2js_replacements(ln_ar)
+			perform_flash2js_replacements(ln_ar,class_name, list_of_parents)
 
 			if lin_id not in lines_with_static_declarations:
 				if lin_id not in lines_with_functions_declarations:
@@ -435,7 +564,9 @@ def add_this_to_lines(lns):
 				str_add = " ".join(ln_ar)
 			str_add = str_add.replace(" (","(").replace(" )",")").replace(" {","{").replace(" }","}").replace(" [","[").replace(" ]","]").replace("( ","(").replace(") ",")").replace("{ ","{").replace("} ","}").replace("[ ","[").replace("] ","]")
 			res_lns.append(pre_spaces[lin_id]+str_add+"\n")
-
+	if (len(all_map_names)!=0):
+		print("all_map_names:",all_map_names)
+		all_map_names.clear()
 	return res_lns, list_of_funcs
 
 def find_next_word(ln, start_id):

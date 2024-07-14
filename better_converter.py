@@ -3,12 +3,31 @@ import os
 from converter import remove_types_from_lines
 from converter import add_this_to_lines
 from converter import second_pass
+from converter import register_global_settins
 from bind_adder import add_binds
 from better_binder import better_binds
 from images_width_fixer import fix_images_width
+global_settings={}
 
+def load_global_settings():
+	global global_settings
+	data = None
+	try:
+		f = open('temp/jsons/_general_settings.json')
+		data = json.load(f)
+		f.close() 
+	except:
+		print("SETTINGS NOT FOUND:")
+	# print("data:",data)
+	if data:		
+		global_settings=data
+		register_global_settins(data)
+
+# 1. вытаскиваем комменты и запоминаем, чтобы расставить потом
+# 2. вытаскиваем строки и запоминаем, чтобы расставить потом
 stored_comments_and_strings=[]
 changed_files=[]
+
 def cut_comments_and_strings(ln,dest_ar,only_strings=False):
 	need1more=True
 	res=""
@@ -81,7 +100,7 @@ def add_spaces_between_signs(ln):
 	return res;
 
 def return_comments_and_strings(ln,dest_ar):
-	res=""
+	# res=""
 	for id in range(len(dest_ar)):
 		code="_COMMSTRPLACEHOLDER_"+str(id)+"_"
 		found_id=ln.find(code)
@@ -96,10 +115,12 @@ def return_comments_and_strings(ln,dest_ar):
 			
 			part1=ln[0:found_id-delta_back]
 			part3=ln[found_id+len(code)+delta_forward:]
-			res+=part1+dest_ar[id]
-			ln=part3
-	res+=ln
-	return res;
+			# res+=part1+dest_ar[id]
+			ln=part1+dest_ar[id]+part3
+		# else:
+		# 	print("NOT FOUND:",code, id, dest_ar[id])
+	# res+=ln
+	return ln;
 
 def finish_lines_with_enters(lns):
 	for id in range(len(lns)-1):
@@ -178,6 +199,7 @@ def recursively_work_directory(dir_path):
 
 orig_dir = "source_as3"
 dest_dir = "results_js"
+load_global_settings()
 changed_files.clear()
 recursively_work_directory(orig_dir)
 print("changed_files:",changed_files)

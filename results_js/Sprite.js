@@ -24,6 +24,19 @@ class Sprite extends Phaser.GameObjects.Container{
 		this.bringToTop(spr);
 	}
 
+	removeAllInteraction(){
+		// console.log("removeAllInteraction called!", this)
+		var children = this.list;
+        for (var i = 0; i < children.length; i++)
+        {
+            var entry = children[i];
+			if (entry.removeAllInteraction){
+				entry.removeAllInteraction()
+			}
+		}
+		this.removeInteractive()
+	}
+
 	removeFromParent(dispose=false){
 		if (this.parentContainer){
 			this.parentContainer.remove(this)
@@ -38,11 +51,22 @@ class Sprite extends Phaser.GameObjects.Container{
 	}
 
 	getChildIndex(spr){
-		this.getIndex(spr);
+		return this.getIndex(spr);
 	}
 
 	addChildAt(spr, id){
-		this.addAt(spr, id);
+		let id0 = this.getIndex(spr)
+		if (id0==-1){
+			this.addAt(spr, id);
+		}else{
+			if (id>id0){
+				this.moveTo(spr, id-1)
+			}else{
+				this.moveTo(spr, id)
+			}
+			
+		}
+		
 	}
 	getChildAt(id){
 		return this.getAt(id)
